@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WooCommerce Product Importer
  * Description: Import top-level categories and review products from another WooCommerce store, one product at a time.
- * Version: 0.1.0
+ * Version: 0.1.1
  * Author: Octoopus
  * Requires Plugins: woocommerce
  * Text Domain: wc-product-importer
@@ -41,7 +41,8 @@ final class WCPI_Importer {
 		if ( 'woocommerce_page_wcpi-importer' !== $hook ) {
 			return;
 		}
-		wp_enqueue_style( 'wcpi-admin', false, array(), '0.1.0' );
+		wp_register_style( 'wcpi-admin', '', array(), '0.1.1' );
+		wp_enqueue_style( 'wcpi-admin' );
 		wp_add_inline_style( 'wcpi-admin', '
 			.wcpi-wrap{max-width:950px}.wcpi-panel{background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:20px;margin:16px 0}
 			.wcpi-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.wcpi-url{width:min(520px,100%)}
@@ -51,7 +52,8 @@ final class WCPI_Importer {
 			.wcpi-muted{color:#646970}.wcpi-status{margin:12px 0;padding:10px;background:#f0f6fc;border-left:4px solid #2271b1}
 			@media(max-width:600px){.wcpi-product{grid-template-columns:1fr}.wcpi-product img{max-width:220px}}
 		' );
-		wp_enqueue_script( 'wcpi-admin', false, array( 'jquery' ), '0.1.0', true );
+		wp_register_script( 'wcpi-admin', '', array( 'jquery' ), '0.1.1', true );
+		wp_enqueue_script( 'wcpi-admin' );
 		wp_add_inline_script( 'wcpi-admin', 'window.WCPI='.wp_json_encode( array(
 			'ajax'  => admin_url( 'admin-ajax.php' ),
 			'nonce' => wp_create_nonce( self::NONCE ),
