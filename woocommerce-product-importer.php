@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WooCommerce Product Importer
  * Description: Import top-level categories and review products from another WooCommerce store, one product at a time.
- * Version: 0.1.1
+ * Version: 0.1.2
  * Author: Octoopus
  * Requires Plugins: woocommerce
  * Text Domain: wc-product-importer
@@ -79,7 +79,9 @@ jQuery(function($){
 		});
 	});
 	$('#wcpi-import-cats').on('click', function(){
-		request('wcpi_import_categories', {}, function(d){
+		var selected = $('#wcpi-categories input[name="wcpi_selected_categories[]"]:checked').map(function(){ return $(this).val(); }).get();
+		if(!selected.length){ $('#wcpi-status').text('حداقل یک دسته‌بندی را انتخاب کنید.'); return; }
+		request('wcpi_import_categories', {categories:selected}, function(d){
 			$('#wcpi-progress').html(d.progress);
 			$('#wcpi-categories').hide(); $('#wcpi-import-cats').hide();
 			$('#wcpi-product-area').show();
@@ -204,7 +206,7 @@ JS;
 
 		$html = '<h3>دسته‌بندی‌های اصلی پیدا شده</h3><p class="wcpi-muted">فقط دسته‌های سطح اول نمایش داده شده‌اند؛ زیردسته‌ها بررسی نمی‌شوند.</p><div class="wcpi-cats">';
 		foreach ( $top as $cat ) {
-			$html .= '<label class="wcpi-cat"><strong>' . esc_html( $cat['name'] ) . '</strong><br><span class="wcpi-muted">' . intval( $cat['count'] ?? 0 ) . ' محصول در مبدأ</span></label>';
+			$html .= '<label class="wcpi-cat"><input type="checkbox" name="wcpi_selected_categories[]" value="' . intval( $cat['id'] ) . '" checked> <strong>' . esc_html( $cat['name'] ) . '</strong><br><span class="wcpi-muted">' . intval( $cat['count'] ?? 0 ) . ' محصول در مبدأ</span></label>';
 		}
 		$html .= '</div><p>با تأیید، همین دسته‌ها در ووکامرس مقصد ساخته یا با دسته‌های موجود تطبیق داده می‌شوند.</p>';
 		wp_send_json_success( array( 'html' => $html, 'message' => count( $top ) . ' دسته اصلی پیدا شد.' ) );
@@ -216,8 +218,19 @@ JS;
 		if ( empty( $state['pending_categories'] ) || empty( $state['source'] ) ) {
 			wp_send_json_error( array( 'message' => 'ابتدا دسته‌بندی‌ها را دریافت کنید.' ) );
 		}
+		$selected_ids = isset( $_POST['categories'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['categories'] ) ) : array();
+		$selected_ids = array_filter( array_unique( $selected_ids ) );
+		if ( ! $selected_ids ) {
+			wp_send_json_error( array( 'message' => 'حداقل یک دسته‌بندی را انتخاب کنید.' ) );
+		}
+		$selected_categories = array_values( array_filter( $state['pending_categories'], function( $cat ) use ( $selected_ids ) {
+			return in_array( (int) $cat['id'], $selected_ids, true );
+		} ) );
+		if ( ! $selected_categories ) {
+			wp_send_json_error( array( 'message' => 'دسته‌بندی انتخاب‌شده معتبر نیست؛ دوباره دسته‌ها را دریافت کنید.' ) );
+		}
 		$mapped = array();
-		foreach ( $state['pending_categories'] as $cat ) {
+		foreach ( $selected_categories as $cat ) {
 			$existing = get_term_by( 'slug', sanitize_title( $cat['slug'] ), 'product_cat' );
 			if ( ! $existing ) {
 				$existing = get_term_by( 'name', $cat['name'], 'product_cat' );
